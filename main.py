@@ -45,3 +45,24 @@ def create_user(username: str, password: str):
         "user_id": user.id,
         "username": user.username
     }
+
+@app.post("/login")
+def login(username: str, password: str):
+    db = SessionLocal()
+
+    user = db.query(User).filter(User.username == username).first()
+
+    if not user:
+        db.close()
+        raise HTTPException(status_code=401, detail="Username haipo")
+
+    if user.password != password:
+        db.close()
+        raise HTTPException(status_code=401, detail="Password sio sahihi")
+
+    db.close()
+    return {
+        "message": "Login imefanikiwa",
+        "user_id": user.id,
+        "username": user.username
+    }

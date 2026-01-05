@@ -1,15 +1,12 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from passlib.context import CryptContext
 
-app = FastAPI(title="PJFinance")
+app = FastAPI()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# USER WA MFANO (temporary)
+# USER WA MFANO (simple, no hashing)
 FAKE_USER = {
     "username": "admin",
-    "password_hash": pwd_context.hash("admin123")
+    "password": "1234"
 }
 
 class LoginRequest(BaseModel):
@@ -22,14 +19,14 @@ def root():
 
 @app.post("/login")
 def login(data: LoginRequest):
-    if data.username != FAKE_USER["username"]:
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+    if (
+        data.username == FAKE_USER["username"]
+        and data.password == FAKE_USER["password"]
+    ):
+        return {
+            "status": "success",
+            "message": "Login successful",
+            "user": data.username
+        }
 
-    if not pwd_context.verify(data.password, FAKE_USER["password_hash"]):
-        raise HTTPException(status_code=401, detail="Invalid username or password")
-
-    return {
-        "status": "success",
-        "message": "Login successful",
-        "user": data.username
-    }
+    raise HTTPException(status_code=401, detail="Invalid username or password")

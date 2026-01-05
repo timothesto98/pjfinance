@@ -1,32 +1,36 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.orm import declarative_base, sessionmaker
+import os
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(bind=engine)
+
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    password = Column(String)
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# USER WA MFANO (simple, no hashing)
-FAKE_USER = {
-    "username": "admin",
-    "password": "1234"
-}
-
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
 @app.get("/")
 def root():
-    return {"message": "PJFinance App is running"}
+    return {"status": "PJFinance connected to database"}
 
-@app.post("/login")
-def login(data: LoginRequest):
-    if (
-        data.username == FAKE_USER["username"]
-        and data.password == FAKE_USER["password"]
-    ):
-        return {
-            "status": "success",
-            "message": "Login successful",
-            "user": data.username
-        }
-
-    raise HTTPException(status_code=401, detail="Invalid username or password")
+@app.post("/create-user")
+def create_user(username: str, password: str):
+    db = SessionLocal()
+    user = User(username=username, password=password)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    db.close()
+    return {"message": "User created", "user": username}
